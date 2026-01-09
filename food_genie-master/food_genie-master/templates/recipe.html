@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Fullscreen Cooking Mode Overlay -->
+<div id="cookingMode" class="cooking-mode-overlay">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h2 style="color: var(--primary);">Cooking Mode</h2>
+        <button onclick="toggleCookingMode()" class="btn-secondary">Exit</button>
+    </div>
+
+    <div id="step-cards" style="flex: 1; position: relative;">
+        <!-- Steps will be injected here via JS -->
+    </div>
+
+    <div style="display: flex; gap: 1rem; margin-top: 2rem; align-items: center;">
+        <button onclick="prevStep()" class="btn-secondary" style="flex: 1;"><i class="fas fa-chevron-left"></i>
+            Previous</button>
+        <span id="step-indicator" style="font-size: 1.2rem; min-width: 80px; text-align: center;">1 / 5</span>
+        <button onclick="nextStep()" class="btn-primary" style="flex: 1;">Next <i
+                class="fas fa-chevron-right"></i></button>
+    </div>
+
+    <div class="progress-bar">
+        <div id="progressBar" class="progress-fill"></div>
+    </div>
+</div>
+
+<div class="recipe-header"
+    style="position: relative; height: 400px; border-radius: 24px; overflow: hidden; margin-bottom: 3rem;">
+    <img src="{{ url_for('static', filename=recipe.image_path) }}" class="recipe-img"
+        style="width: 100%; height: 100%; object-fit: cover;">
+    <div class=""
+        style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, #0f172a, transparent); padding: 4rem 2rem 2rem;">
+        <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+            <span style="background: var(--primary); padding: 5px 12px; border-radius: 20px; font-weight: 600;">{{
+                recipe.cuisine_type }}</span>
+            <span
+                style="background: rgba(255,255,255,0.1); backdrop-filter: blur(4px); padding: 5px 12px; border-radius: 20px; font-weight: 600;">{{
+                recipe.category }}</span>
+        </div>
+        <h1 style="font-size: 3.5rem; text-shadow: 0 4px 20px rgba(0,0,0,0.5);">{{ recipe.dish_name }}</h1>
+        <div style="display: flex; align-items: center; gap: 2rem; margin-top: 1rem;">
+            <span><i class="far fa-clock"></i> {{ recipe.cooking_time }}</span>
+            <span><i class="fas fa-signal"></i> {{ recipe.difficulty }}</span>
+            <span><i class="fas fa-tag"></i> {{ recipe.estimated_cost }}</span>
+
+            {% if session.get('user_id') == recipe.user_id %}
+            <a href="{{ url_for('edit_recipe', id=recipe.id) }}"
+                style="color: white; text-decoration: none; font-size: 1.2rem; margin-left: 1rem;">
+                <i class="fas fa-edit"></i>
+            </a>
+            {% endif %}
+
+            <button onclick="toggleFavorite({{ recipe.id }}, this)"
+                style="background: transparent; border: none; font-size: 1.5rem; cursor: pointer; transition: 0.3s; color: var(--primary);">
+                <i class="{{ 'fas' if is_favorite else 'far' }} fa-heart"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; margin-bottom: 3rem;">
+    <!-- Main Content -->
+    <div>
+        <div class="card" style="margin-bottom: 2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h3><i class="fas fa-shopping-basket" style="color: var(--secondary);"></i> Ingredients</h3>
+                <div
+                    style="background: rgba(255,255,255,0.05); padding: 5px; border-radius: 8px; display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 0.8rem; color: var(--text-muted);">Portion:</span>
+                    <button onclick="updatePortions(0.5)" class="btn-secondary"
+                        style="padding: 2px 8px; font-size: 0.8rem;">0.5x</button>
+                    <button onclick="updatePortions(1)" class="btn-secondary"
+                        style="padding: 2px 8px; font-size: 0.8rem; background: var(--primary); border: none;">1x</button>
+                    <button onclick="updatePortions(2)" class="btn-secondary"
+                        style="padding: 2px 8px; font-size: 0.8rem;">2x</button>
+                </div>
+            </div>
+
+            <ul id="ingredientsList" style="list-style: none;">
+                {% for item in recipe.ingredients_en %}
+                <li
+                    style="padding: 0.8rem 0; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
+                    <span class="ingredient-text">{{ item }}</span>
+                    <button onclick="addToShoppingList('{{ item }}')"
+                        style="background: transparent; border: 1px solid var(--glass-border); color: var(--text-gray); border-radius: 50%; width: 28px; height: 28px; cursor: pointer;">
+                        <i class="fas fa-plus" style="font-size: 0.7rem;"></i>
+                    </button>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h3><i class="fas fa-fire" style="color: var(--primary);"></i> Instructions</h3>
+                <div style="display: flex; gap: 1rem;">
+                    <button onclick="speakRecipe()" class="btn-secondary"><i class="fas fa-volume-up"></i></button>
+                    <button onclick="toggleCookingMode()" class="btn-primary"><i class="fas fa-expand"></i> Start
+                        Cooking</button>
+                </div>
+            </div>
+
+            <div id="instructionsList">
+                {% for step in recipe.instructions_en %}
+                <div class="instruction-step" style="display: flex; gap: 1.5rem; margin-bottom: 2rem;">
+                    <div style="font-size: 1.5rem; font-weight: 800; color: rgba(255,255,255,0.1);">{{ loop.index }}
+                    </div>
+                    <div>
+                        <p style="font-size: 1.1rem; line-height: 1.6;">{{ step }}</p>
+                        {% if recipe.image_prompts and loop.index0 < recipe.image_prompts|length %} <div
+                            style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-gray); background: rgba(0,0,0,0.2); padding: 8px; border-radius: 8px; display: inline-block;">
+                            <i class="fas fa-camera"></i> AI Visualization: {{ recipe.image_prompts[loop.index0] }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Sidebar -->
+<div>
+    <!-- Nutrition -->
+    <div class="card" style="margin-bottom: 2rem;">
+        <h3>Nutrition Facts</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+            <div style="text-align: center; background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 12px;">
+                <div style="font-size: 1.5rem; font-weight: 700; color: var(--secondary);">{{ nutrition.calories }}
+                </div>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">Calories</div>
+            </div>
+            <div style="text-align: center; background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 12px;">
+                <div style="font-size: 1.5rem; font-weight: 700; color: var(--accent);">{{ nutrition.protein }}</div>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">Protein</div>
+            </div>
+            <div style="text-align: center; background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 12px;">
+                <div style="font-size: 1.5rem; font-weight: 700; color: #fab1a0;">{{ nutrition.carbs }}</div>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">Carbs</div>
+            </div>
+            <div style="text-align: center; background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 12px;">
+                <div style="font-size: 1.5rem; font-weight: 700; color: #fdcb6e;">{{ nutrition.fats }}</div>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">Fats</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Video Script -->
+    <div class="card">
+        <h3><i class="fas fa-video"></i> Content Creator Mode</h3>
+        <p class="text-muted" style="font-size: 0.9rem; margin-bottom: 1rem;">30s Video concept</p>
+        <div
+            style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 10px; font-family: monospace; font-size: 0.9rem;">
+            <p><span style="color: var(--primary);">[SCENE]</span> {{ recipe.video_script.scene_description }}</p>
+            <div style="height: 10px;"></div>
+            <p><span style="color: var(--secondary);">[CAM]</span> {{ recipe.video_script.camera_angle }}</p>
+        </div>
+    </div>
+</div>
+</div>
+
+<!-- AI Chat Widget -->
+<button class="chat-toggle" onclick="toggleChat()">
+    <i class="fas fa-comment-dots"></i>
+</button>
+
+<div class="chat-widget" id="chatWidget">
+    <div class="chat-header">
+        <span style="font-weight: 600;"><i class="fas fa-robot" style="color: var(--primary);"></i> Chef
+            Assistant</span>
+        <button onclick="toggleChat()" style="background: none; border: none; color: white; cursor: pointer;"><i
+                class="fas fa-times"></i></button>
+    </div>
+    <div class="chat-messages" id="chatMessages">
+        <div class="chat-msg chef">
+            Hello! I'm here to help you cook <b>{{ recipe.dish_name }}</b>. Ask me anything! 👨‍🍳
+        </div>
+    </div>
+    <div class="chat-input-area">
+        <input type="text" id="chatInput" placeholder="Ask a question..."
+            style="flex: 1; background: transparent; border: none; color: white; outline: none;">
+        <button onclick="sendMessage()"
+            style="background: var(--primary); border: none; color: white; width: 35px; height: 35px; border-radius: 50%; cursor: pointer;">
+            <i class="fas fa-paper-plane" style="font-size: 0.8rem;"></i>
+        </button>
+    </div>
+</div>
+
+<!-- Data -->
+<script>
+    const RECIPE_DATA = {{ recipe| tojson }};
+    const STEPS = RECIPE_DATA.instructions_en;
+</script>
+
+{% endblock %}

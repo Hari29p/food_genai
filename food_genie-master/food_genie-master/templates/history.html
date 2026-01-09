@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 2rem; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+    <h2 style="margin: 0; margin-right: auto;">My Cookbook</h2>
+
+    <input type="text" id="recipeSearch" placeholder="Search recipes..." class="form-control"
+        style="max-width: 300px; margin: 0;" onkeyup="filterRecipes()">
+
+    <select id="recipeFilter" class="form-control" style="max-width: 150px; margin: 0;" onchange="filterRecipes()">
+        <option value="all">All Types</option>
+        <option value="Veg">Vegetarian</option>
+        <option value="Non-Veg">Non-Veg</option>
+    </select>
+</div>
+
+<div class="grid" id="recipeGrid">
+    {% for recipe in recipes %}
+    <div class="card recipe-item" data-name="{{ recipe.dish_name.lower() }}" data-type="{{ recipe.category }}">
+        <img src="{{ url_for('static', filename=recipe.image_path) }}" class="card-img"
+            style="height: 200px; object-fit: cover;">
+        <div class="card-body">
+            <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                <span class="badge" style="background: var(--primary);">{{ recipe.cuisine_type }}</span>
+                <span class="badge" style="background: rgba(255,255,255,0.1);">{{ recipe.category }}</span>
+            </div>
+            <h3>{{ recipe.dish_name }}</h3>
+            <p class="text-muted"><i class="far fa-clock"></i> {{ recipe.cooking_time }}</p>
+            <a href="{{ url_for('view_recipe', id=recipe.id) }}" class="btn-primary"
+                style="display: block; text-align: center; margin-top: 1rem;">View Recipe</a>
+        </div>
+    </div>
+    {% else %}
+    <div style="grid-column: 1/-1; text-align: center; padding: 3rem;">
+        <i class="fas fa-cookie-bite" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
+        <p>No recipes yet. Upload a photo or create one manually!</p>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+    function filterRecipes() {
+        const search = document.getElementById('recipeSearch').value.toLowerCase();
+        const filter = document.getElementById('recipeFilter').value;
+        const cards = document.querySelectorAll('.recipe-item');
+
+        cards.forEach(card => {
+            const name = card.getAttribute('data-name');
+            const type = card.getAttribute('data-type');
+
+            let matchesSearch = name.includes(search);
+            let matchesFilter = (filter === 'all') || (type === filter);
+
+            if (matchesSearch && matchesFilter) {
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
+</script>
+{% endblock %}

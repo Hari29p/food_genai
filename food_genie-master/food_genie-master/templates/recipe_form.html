@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 0 auto;">
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <h1>{{ 'Edit Recipe' if recipe else 'Create Recipe' }}</h1>
+        <p class="text-muted">{{ 'Modify your masterpiece' if recipe else 'Share your culinary secrets' }}</p>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data" class="card">
+        <!-- Basic Info -->
+        <h3 style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 0.5rem;">Basic
+            Details</h3>
+
+        <div class="form-group">
+            <label>Dish Name</label>
+            <input type="text" name="dish_name" class="form-control" value="{{ recipe.dish_name if recipe else '' }}"
+                required>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+                <label>Cuisine Type</label>
+                <input type="text" name="cuisine_type" class="form-control"
+                    value="{{ recipe.cuisine_type if recipe else '' }}" placeholder="e.g. Italian">
+            </div>
+            <div class="form-group">
+                <label>Dietary Category</label>
+                <select name="category" class="form-control">
+                    <option value="Veg" {{ 'selected' if recipe and recipe.category=='Veg' }}>Vegetarian</option>
+                    <option value="Non-Veg" {{ 'selected' if recipe and recipe.category=='Non-Veg' }}>Non-Vegetarian
+                    </option>
+                </select>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+                <label>Cooking Time</label>
+                <input type="text" name="cooking_time" class="form-control"
+                    value="{{ recipe.cooking_time if recipe else '' }}" placeholder="e.g. 30 mins">
+            </div>
+            <div class="form-group">
+                <label>Difficulty</label>
+                <select name="difficulty" class="form-control">
+                    <option value="Easy" {{ 'selected' if recipe and recipe.difficulty=='Easy' }}>Easy</option>
+                    <option value="Medium" {{ 'selected' if recipe and recipe.difficulty=='Medium' }}>Medium</option>
+                    <option value="Hard" {{ 'selected' if recipe and recipe.difficulty=='Hard' }}>Hard</option>
+                </select>
+            </div>
+        </div>
+
+        {% if not recipe %}
+        <div class="form-group">
+            <label>Recipe Image</label>
+            <input type="file" name="image" class="form-control" accept="image/*" required>
+        </div>
+        {% endif %}
+
+        <!-- Ingredients -->
+        <h3 style="margin: 2rem 0 1rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 0.5rem;">
+            Ingredients</h3>
+        <div id="ingredients-container">
+            {% if recipe and recipe.ingredients_en %}
+            {% for item in recipe.ingredients_en %}
+            <div class="form-group" style="display: flex; gap: 1rem;">
+                <input type="text" name="ingredients[]" class="form-control" value="{{ item }}" required>
+                <button type="button" class="btn-secondary" onclick="this.parentElement.remove()"
+                    style="width: auto; height: 50px;">🗑️</button>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="form-group" style="display: flex; gap: 1rem;">
+                <input type="text" name="ingredients[]" class="form-control" placeholder="e.g. 2 onions" required>
+            </div>
+            {% endif %}
+        </div>
+        <button type="button" class="btn-secondary" onclick="addIngredient()">+ Add Ingredient</button>
+
+        <!-- Instructions -->
+        <h3 style="margin: 2rem 0 1rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 0.5rem;">
+            Instructions</h3>
+        <div id="instructions-container">
+            {% if recipe and recipe.instructions_en %}
+            {% for item in recipe.instructions_en %}
+            <div class="form-group" style="display: flex; gap: 1rem;">
+                <textarea name="instructions[]" class="form-control" rows="2" required>{{ item }}</textarea>
+                <button type="button" class="btn-secondary" onclick="this.parentElement.remove()"
+                    style="width: auto; height: 50px;">🗑️</button>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="form-group" style="display: flex; gap: 1rem;">
+                <textarea name="instructions[]" class="form-control" rows="2" placeholder="Step 1..."
+                    required></textarea>
+            </div>
+            {% endif %}
+        </div>
+        <button type="button" class="btn-secondary" onclick="addInstruction()">+ Add Step</button>
+
+        <div style="margin-top: 3rem;">
+            <button type="submit" class="btn-primary">Save Recipe</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    function addIngredient() {
+        const div = document.createElement('div');
+        div.className = 'form-group';
+        div.style.cssText = 'display: flex; gap: 1rem;';
+        div.innerHTML = `
+        <input type="text" name="ingredients[]" class="form-control" placeholder="New Ingredient" required>
+        <button type="button" class="btn-secondary" onclick="this.parentElement.remove()" style="width: auto; height: 50px;">🗑️</button>
+    `;
+        document.getElementById('ingredients-container').appendChild(div);
+    }
+
+    function addInstruction() {
+        const div = document.createElement('div');
+        div.className = 'form-group';
+        div.style.cssText = 'display: flex; gap: 1rem;';
+        div.innerHTML = `
+        <textarea name="instructions[]" class="form-control" rows="2" placeholder="Next Step..." required></textarea>
+        <button type="button" class="btn-secondary" onclick="this.parentElement.remove()" style="width: auto; height: 50px;">🗑️</button>
+    `;
+        document.getElementById('instructions-container').appendChild(div);
+    }
+</script>
+{% endblock %}

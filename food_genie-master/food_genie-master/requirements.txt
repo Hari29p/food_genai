@@ -1,0 +1,6 @@
+flask
+werkzeug
+python-dotenv
+google-genai
+requests
+pillow

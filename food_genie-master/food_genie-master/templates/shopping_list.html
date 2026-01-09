@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="text-align: center; margin-bottom: 3rem;">
+    <h1>My Shopping List</h1>
+    <p class="text-muted">Ingredients you need to buy</p>
+</div>
+
+<div class="card" style="max-width: 600px; margin: 0 auto;">
+    <div style="display: flex; gap: 1rem; margin-bottom: 2rem;">
+        <input type="text" id="newItemInput" class="form-control" placeholder="Add custom item..."
+            style="margin-bottom: 0;">
+        <button onclick="addCustomItem()" class="btn-primary" style="width: auto; padding: 0 25px;"><i
+                class="fas fa-plus"></i></button>
+    </div>
+
+    <div id="shopping-list">
+        {% for item in items %}
+        <div class="list-item" id="item-{{ item.id }}"
+            style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; border-bottom: 1px solid var(--glass-border);">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <div onclick="toggleItem({{ item.id }})"
+                    style="width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--primary); cursor: pointer; display: flex; align-items: center; justify-content: center; background: {{ 'var(--primary)' if item.is_checked else 'transparent' }}">
+                    {% if item.is_checked %}<i class="fas fa-check" style="color: white; font-size: 0.8rem;"></i>{%
+                    endif %}
+                </div>
+                <span
+                    style="font-size: 1.1rem; text-decoration: {{ 'line-through' if item.is_checked else 'none' }}; color: {{ 'var(--text-gray)' if item.is_checked else 'white' }};">
+                    {{ item.item }}
+                </span>
+            </div>
+            <button onclick="deleteItem({{ item.id }})"
+                style="background: transparent; border: none; color: #ef4444; cursor: pointer; opacity: 0.6; transition: 0.3s;">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+        {% else %}
+        <p class="text-muted" style="text-align: center; padding: 2rem;">List is empty. Add ingredients from your
+            recipes!</p>
+        {% endfor %}
+    </div>
+    <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+        <button onclick="shopNow('amazon')" class="btn-primary" style="background: #f39c12; border: none;">
+            <i class="fab fa-amazon"></i> Shop Amazon Fresh
+        </button>
+        <button onclick="shopNow('google')" class="btn-primary" style="background: #4285F4; border: none;">
+            <i class="fab fa-google"></i> Google Shop
+        </button>
+        <button onclick="shopNow('instacart')" class="btn-primary" style="background: #e67e22; border: none;">
+            <i class="fas fa-shopping-cart"></i> Instacart
+        </button>
+    </div>
+</div>
+
+<script>
+    function toggleItem(id) {
+        fetch(`/api/shopping-list/toggle/${id}`, { method: 'POST' })
+            .then(() => location.reload()); // Simple reload to update UI
+    }
+
+    function deleteItem(id) {
+        fetch(`/api/shopping-list/delete/${id}`, { method: 'POST' })
+            .then(() => location.reload());
+    }
+
+    function addCustomItem() {
+        const input = document.getElementById('newItemInput');
+        if (!input.value.trim()) return;
+
+        fetch('/api/shopping-list/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ item: input.value })
+        }).then(() => location.reload());
+    }
+
+    function shopNow(platform) {
+        const items = [];
+        document.querySelectorAll('.list-item').forEach(li => {
+            const spanElement = li.querySelector('span');
+            const text = spanElement ? spanElement.innerText.trim() : '';
+            const isChecked = spanElement ? (spanElement.style.textDecoration === 'line-through') : false;
+
+            if (text && !isChecked) {
+                items.push(text);
+            }
+        });
+
+        if (items.length === 0) {
+            alert("No unchecked items to shop for!");
+            return;
+        }
+
+        const query = encodeURIComponent(items.join(" "));
+        let url = "";
+
+        if (platform === 'amazon') {
+            url = `https://www.amazon.com/s?k=${query}&i=grocery`;
+        } else if (platform === 'google') {
+            url = `https://www.google.com/search?tbm=shop&q=${query}`;
+        } else if (platform === 'instacart') {
+            url = `https://www.instacart.com/store/s?k=${query}`;
+        }
+
+        window.open(url, '_blank');
+    }
+</script>
+{% endblock %}
